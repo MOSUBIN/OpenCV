@@ -1,0 +1,80 @@
+using OpenCvSharp;
+using OpenCvSharp.Extensions;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace WindowsFormsApp28
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+           
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            Mat m1 = Cv2.ImRead("C:\\Temp\\img\\Hudu.jpg", ImreadModes.Unchanged);
+
+            Bitmap imageBitmap = m1.ToBitmap();
+
+            pictureBox1.Image = imageBitmap;
+
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Mat src = Cv2.ImRead("C:\\Temp\\img\\Hudu.jpg");
+            Mat gray = new Mat();
+          
+            Cv2.CvtColor(src, gray, ColorConversionCodes.BGR2GRAY);      
+            Cv2.WaitKey(0);
+
+            Bitmap imageBitmap = gray.ToBitmap();
+
+            pictureBox1.Image = imageBitmap;
+
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Mat m1 = Cv2.ImRead("C:\\Temp\\img\\Hudu.jpg", ImreadModes.Unchanged);
+
+            Bitmap imageBitmap = m1.ToBitmap();
+
+            pictureBox1.Image = imageBitmap;
+
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Image pictureBoxImage = pictureBox1.Image;
+            Bitmap pictureBoxBitmap = new Bitmap(pictureBoxImage);
+            Mat img = OpenCvSharp.Extensions.BitmapConverter.ToMat(pictureBoxBitmap);
+            bool save;
+
+
+            ImageEncodingParam[] prms = new ImageEncodingParam[]
+            {
+                new ImageEncodingParam(ImwriteFlags.JpegQuality, 100),
+                new ImageEncodingParam(ImwriteFlags.JpegProgressive, 1)
+
+            };
+
+            save = Cv2.ImWrite("OpenCV.jpeg", img, prms);
+            Console.WriteLine(save);
+        }
+    }
+}
