@@ -1,0 +1,127 @@
+using OpenCvSharp;
+using OpenCvSharp.Extensions;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
+
+namespace WindowsFormsApp30
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+
+
+        }
+
+        private Mat image1;
+        private Mat image2;
+        private Mat image3;
+        private Mat image4;
+        private Mat image5;
+        private Mat image6;
+
+
+
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+
+            Mat image1 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            Bitmap imageBitmap = image1.ToBitmap();
+            pictureBox1.Image = imageBitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+       
+
+            Mat image1 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            OpenCvSharp.Point center = new OpenCvSharp.Point(image1.Width / 2, image1.Height / 2);
+            Cv2.Circle(image1, center, 80, Scalar.All(255), -1);
+            Bitmap imageBitmap = image1.ToBitmap();
+            pictureBox1.Image = imageBitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Mat image2 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            OpenCvSharp.Point center = new OpenCvSharp.Point(image2.Width / 2, image2.Height / 2);
+            Cv2.Rectangle(image2, new OpenCvSharp.Point(0, 0), new OpenCvSharp.Point(125, 250), Scalar.All(255), -1);
+            Bitmap imageBitmap = image2.ToBitmap();
+            pictureBox1.Image = imageBitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Mat image1 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            Mat image2 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            OpenCvSharp.Point center = new OpenCvSharp.Point(image1.Width / 2, image1.Height / 2);
+            Cv2.Rectangle(image2, new OpenCvSharp.Point(0, 0), new OpenCvSharp.Point(125, 250), Scalar.All(255), -1);
+            Cv2.Circle(image1, center, 80, Scalar.All(255), -1);
+
+            Mat image3 = new Mat();
+            Cv2.BitwiseOr(image1, image2, image3);
+            Bitmap imageBitmap = image3.ToBitmap();
+            pictureBox1.Image = imageBitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            Mat image1 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            Mat image2 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            OpenCvSharp.Point center = new OpenCvSharp.Point(image1.Width / 2, image1.Height / 2);
+            Cv2.Rectangle(image2, new OpenCvSharp.Point(0, 0), new OpenCvSharp.Point(125, 250), Scalar.All(255), -1);
+            Cv2.Circle(image1, center, 80, Scalar.All(255), -1);
+
+            Mat image4 = new Mat();
+            Cv2.BitwiseAnd(image1, image2, image4);
+            Bitmap imageBitmap = image4.ToBitmap();
+            pictureBox1.Image = imageBitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            Mat image1 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            Mat image2 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            OpenCvSharp.Point center = new OpenCvSharp.Point(image1.Width / 2, image1.Height / 2);
+            Cv2.Rectangle(image2, new OpenCvSharp.Point(0, 0), new OpenCvSharp.Point(125, 250), Scalar.All(255), -1);
+            Cv2.Circle(image1, center, 80, Scalar.All(255), -1);
+
+            Mat image5 = new Mat();
+            Cv2.BitwiseXor(image1, image2, image5);
+            Bitmap imageBitmap = image5.ToBitmap();
+            pictureBox1.Image = imageBitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            Mat image1 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            Mat image2 = new Mat(250, 250, MatType.CV_8UC1, Scalar.All(0));
+            OpenCvSharp.Point center = new OpenCvSharp.Point(image1.Width / 2, image1.Height / 2);
+            Cv2.Rectangle(image2, new OpenCvSharp.Point(0, 0), new OpenCvSharp.Point(125, 250), Scalar.All(255), -1);
+            Cv2.Circle(image1, center, 80, Scalar.All(255), -1);
+
+            Mat image6 = new Mat();
+            Cv2.BitwiseNot(image1, image6);
+            Bitmap imageBitmap = image6.ToBitmap();
+            pictureBox1.Image = imageBitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+        }
+    }
+}
