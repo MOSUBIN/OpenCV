@@ -1,0 +1,343 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Security.Policy;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ConsoleApp164
+{
+
+
+    public static class IconFlags
+    {
+        public const int DRAW_RECTANGLE = 0;    // 사각형 그리기
+        public const int DRAW_CIRCLE = 1;       // 원 그리기
+        public const int DRAW_ECLIPSE = 2;      // 타원 그리기
+        public const int DRAW_LINE = 3;         // 직선 그리기
+        public const int DRAW_BRUSH = 4;        // 브러시 그리기
+        public const int ERASE = 5;             // 지우개
+        public const int OPEN = 6;              // 열기 명령
+        public const int SAVE = 7;              // 저장 명령
+        public const int PLUS = 8;              // 밝게 하기 명령
+        public const int MINUS = 9;             // 어둡게 하기 명령
+        public const int CLEAR = 10;            // 지우기 명령
+        public const int COLOR = 11;            // 색상 아이콘
+        public const int PALETTE = 12;          // 색상팔레트
+        public const int HUE_IDX = 13;          // 색상인덱스
+    }
+    public class PaintToolbox
+    {
+        private int hue; // hue 값 - 전역변수 지정
+        private List<Rect> icons = new List<Rect>();
+        private Mat image = new Mat();
+        public Point pt2 = new Point();
+        public Point pt1 = new Point();
+        public Point palette_pt = new Point();
+        private Scalar Color = new Scalar(0, 0, 0);
+        public int mouse_mode =0;
+        public int draw_mode = 0;
+        public int command_mode = 0;
+
+        public List<Rect> Icons => icons;
+        public Mat Image => image;
+        public Scalar color => Color;
+        public Point Palette_pt => palette_pt;
+
+
+        public int thickness = 3;
+        public Mat canvas= new Mat();
+
+        public void SetImage(Mat img)
+        {
+            this.image = img;
+        }
+
+        public void SetCanvas(Rect rect)
+        {
+            this.canvas = image.SubMat(rect);
+        }
+
+        public void SetPalette_pt(Point pt)
+
+        {
+
+            this.palette_pt = pt;
+
+        }
+
+
+
+        public void PlaceIcons(Size size) // size : 아이콘 크기
+        {
+            List<string> iconNames = new List<string>
+            {
+                "rect", "circle", "eclipe", "line", "brush", "eraser",
+                "open", "save", "plus", "minus", "clear", "color"
+            };
+
+            int btnRows = (int)Math.Ceiling(iconNames.Count / 2.0); // 2열 버튼의 행수
+
+
+            for (int i = 0, k = 0; i < btnRows; i++)
+            {
+                for (int j = 0; j < 2; j++, k++)
+                {
+                    Point pt = new Point(j * size.Width, i * size.Height); // 각 아이콘 시작위치 
+                    icons.Add(new Rect(pt, size)); // 각 아이콘 관심영역
+
+                    Mat icon = Cv2.ImRead("C:\\Temp\\img\\icon\\" + iconNames[k] + ".jpg", ImreadModes.Color);
+                    if (icon.Empty()) continue; // 예외처리
+
+                    Cv2.Resize(icon, icon, size); // 아이콘 영상 크기 통일
+                    icon.CopyTo(image[icons[k]]);
+                }
+            }
+
+        }
+
+        public void CreateHueIndex(Rect rect) // rect - 색상인덱스 영역
+        {
+            Mat mHueIdx = image.SubMat(rect); // 색상인덱스 영역 참조
+            float ratio = 180.0f / rect.Height; // 색상인덱스 세로크기의 hue 스케일
+
+            for (int i = 0; i < rect.Height; i++)
+            {
+                Scalar hueColor = new Scalar(i * ratio, 255, 255); // HSV 색상 지정
+                mHueIdx.Row(i).SetTo(hueColor); // 한 행의 색상 지정
+            }
+            Cv2.CvtColor(mHueIdx, mHueIdx, ColorConversionCodes.HSV2BGR); // HSV에서 RGB로 변환
+        }
+
+        public void CreatePalette(int posY, Rect rectPale) // pos_y : 마우스 클릭 y 좌표, rect_pale: 팔레트 영역
+        {
+            Mat mPalette = image.SubMat(rectPale); // 팔레트 영역 참조
+            float ratio1 = 180.0f / rectPale.Height; // 팔레트 높이에 따른 hue 비율
+            float ratio2 = 256.0f / rectPale.Width; // 팔레트 너비에 따른 saturation 비율 
+            float ratio3 = 256.0f / rectPale.Height; // 팔레트 높이에 따른 intensity 비율
+
+            hue = (int)Math.Round((posY - rectPale.Y) * ratio1); // 색상팔레트 기본 색상
+
+            for (int i = 0; i < mPalette.Rows; i++)
+            {
+                for (int j = 0; j < mPalette.Cols; j++)
+                {
+                    int saturation = (int)Math.Round(j * ratio2); // 채도 계산
+                    int intensity = (int)Math.Round((mPalette.Rows - i - 1) * ratio3); // 명도 계산
+                    mPalette.At<Vec3b>(i, j) = new Vec3b((byte)hue, (byte)saturation, (byte)intensity); // HSV 색상 지정
+                }
+            }
+            Cv2.CvtColor(mPalette, mPalette, ColorConversionCodes.HSV2BGR); // HSV에서 RGB로 변환
+        }
+
+        //일반 명령 수행 
+        public void command(int command_mode)
+        {
+            Console.WriteLine($"코멘드를 불렀습니다. : {command_mode}");
+
+            if (command_mode == IconFlags.PALETTE)                              //색상 팔레트 영역 클릭 
+            {
+                float ratio1 = 256.0f / icons[IconFlags.PALETTE].Height; //높이로 명도 비율 지정 
+                float ratio2 = 256.0f / icons[IconFlags.PALETTE].Width; //너비로 채도 비율 지정 
+
+
+                Point pt = pt2 - palette_pt;
+                int saturation = (int)Math.Round(pt.X * ratio1);
+                int value = (int)Math.Round((icons[IconFlags.PALETTE].Height - pt.Y - 1) * ratio2);
+                Scalar hsv = new Scalar((byte)hue, (byte)saturation, (byte)value);           //HSV 색상 지정 
+
+                Mat m_color = image.SubMat(icons[IconFlags.COLOR]);        //색상아이콘 참조 
+                m_color.SetTo(hsv);
+                Cv2.CvtColor(m_color, m_color, ColorConversionCodes.HSV2BGR);     //HSV -> BGR 변환 
+                Cv2.Rectangle(image, icons[IconFlags.COLOR], new Scalar(0, 0, 0), 1); //색상 아이콘 테두리 색 
+                //Scalar를 C#에서 표현하려면 Vec3b와 같은 자료형을 사용하고,
+                //해당 자료형을 사용하여 Color 변수를 초기화할 수 있습니다
+                Vec3b vec = m_color.At<Vec3b>(10, 10);
+                Color = new Scalar(vec.Item0, vec.Item1, vec.Item2);
+            }
+            else if (command_mode == IconFlags.HUE_IDX)                          //색상 인덱스 클릭시 
+            {
+                CreatePalette(pt2.Y, icons[IconFlags.PALETTE]);          //팔레트 다시 그리기 
+            }
+            else if(command_mode == IconFlags.CLEAR)
+            {
+                canvas.SetTo(Scalar.All(255));
+                mouse_mode = 0;
+            }
+            else if(command_mode == IconFlags.OPEN)
+            {
+                Mat tmp = Cv2.ImRead("my_save.jpg", ImreadModes.Color);
+                if (tmp == null || tmp.Empty())
+                {
+                    Console.WriteLine("파일이 존재하지 않습니다.");
+                }
+                Cv2.Resize(tmp, tmp, canvas.Size());
+                tmp.CopyTo(canvas);
+            }
+            else if(command_mode == IconFlags.SAVE)
+            {
+                Cv2.ImWrite("my_save.jpg", canvas);
+            }
+            else if (command_mode == IconFlags.PLUS)
+            {
+                Cv2.Add(canvas, Scalar.All(10), canvas);
+            }
+            else if(command_mode == IconFlags.MINUS)
+            {
+                Cv2.Add(canvas, Scalar.All(-10), canvas);
+            }
+
+            Cv2.ImShow("image", image);
+        }
+
+        //MouseEventTypes eventTypes: 마우스 이벤트의 유형을 나타내는 열거형
+        //int x: 마우스 이벤트가 발생한 X 좌표
+        //int y: 마우스 이벤트가 발생한 Y 좌표
+        //MouseEventFlags flags: 마우스 이벤트와 관련된 추가 정보를 나타내는 플래그입니다. 이 플래그를 통해 마우스 버튼 상태, 휠 스크롤 
+        //IntPtr userdata: 사용자 지정 데이터를 포함하는 포인터입니다. 
+
+        public void onMouse(MouseEventTypes eventTypes, int x, int y , MouseEventFlags flags, IntPtr userdata)
+        {
+            Point pt = new Point(x, y);
+            if(eventTypes == MouseEventTypes.LButtonUp)   //왼쪽 버튼 떼기 
+            {
+                for (int i = 0; i < icons.Count; i++)    //메뉴 아이콘 사각형 조회 
+                {
+                    if (icons[i].Contains(pt))          //메뉴 클릭 여부 검사 
+                    {
+                        if (i < 6)                          //그리기 명령일 때
+                        {
+                            mouse_mode = 0;                 //마우스 상태 초기화
+                            draw_mode = i;                  //그리기 모드 
+                        }
+                        else command(i);                    //일반 명령이면
+                        return;
+                    }
+                  
+                }
+                pt2 = pt;                       //종료좌표 저장
+                mouse_mode = 1;                 //버튼 떼기 상태 지정 
+                draw(image, Color);
+            }
+            else if (eventTypes == MouseEventTypes.LButtonDown)    //왼쪽 버튼 누르기
+            {
+                pt1 = pt;                                           //시작좌표 저장
+                mouse_mode = 2;
+
+                Console.WriteLine("왼쪽 마우스가 클릭되었습니다.");
+            }
+
+            if(mouse_mode >= 2)                                  //왼쪽 버튼 누르기 or 드래그
+            {
+                Rect rect = new Rect(0, 0, 125, image.Rows);    
+                mouse_mode = (rect.Contains(pt)) ? 0 : 3;        //마우스 상태 지정
+                pt2 = pt;
+            }
+        }
+        public void draw(Mat DrawImage, Scalar color)
+        {
+            switch (draw_mode)
+            {
+                case IconFlags.DRAW_RECTANGLE:
+                    Cv2.Rectangle(DrawImage, pt1, pt2, color, thickness);
+                    break;
+
+                case IconFlags.DRAW_LINE:
+                    Cv2.Line(DrawImage, pt1, pt2, color, thickness);
+                    break;
+
+                case IconFlags.DRAW_BRUSH:
+                    Cv2.Line(DrawImage, pt1, pt2, color, thickness * 3);
+                    pt1 = pt2;
+                    break;
+
+                case IconFlags.ERASE:
+                    Cv2.Line(DrawImage, pt1, pt2, Scalar.All(255), thickness * 5);
+                    pt1 = pt2;
+                    break;
+
+                case IconFlags.DRAW_CIRCLE:
+                    Point pt3 = new Point(pt1.X - pt2.X, pt1.Y - pt2.Y);
+                    int radius = (int)Math.Sqrt(pt3.X * pt3.X + pt3.Y * pt3.Y);
+                    Cv2.Circle(DrawImage, pt1, radius, color, thickness);
+                    break;
+
+                case IconFlags.DRAW_ECLIPSE:
+                    Point center = new Point((pt1.X + pt2.X) / 2, (pt1.Y + pt2.Y) / 2);
+                    Size size = new Size(Math.Abs(pt1.X - pt2.X) / 2, Math.Abs(pt1.Y - pt2.Y) / 2);
+                    Cv2.Ellipse(DrawImage, center, size, 0, 0, 360, color, thickness);
+                    break;
+            }
+
+            Cv2.ImShow("image", image);
+        }
+
+
+        public void onTrackbar(int value, IntPtr userdata)
+        {
+            mouse_mode = 0;
+        }
+
+        }
+            
+   
+
+  
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Mat image = new Mat(500, 800, MatType.CV_8UC3, Scalar.All(255)); // Create the Mat object in Main
+            PaintToolbox toolbox = new PaintToolbox();
+
+            toolbox.SetImage(image);
+            toolbox.PlaceIcons(new Size(60, 60)); // 아이콘 배치, 아이콘 크기
+
+            Rect lastIcon = toolbox.Icons.Last(); // 아이콘 사각형 마지막 원소
+            //Point startPale = lastIcon.BottomRight + new Point(0, 5); // 팔레트 시작위치
+            Point startPale = new Point(0, lastIcon.BottomRight.Y + 5); //팔레트 시작위치
+
+            toolbox.Icons.Add(new Rect(startPale, new Size(100, 100))); // 팔레트 사각형 추가
+            toolbox.Icons.Add(new Rect(startPale + new Point(105, 0), new Size(15, 100))); // 색상인덱스 사각형 추가
+
+            toolbox.CreateHueIndex(toolbox.Icons[IconFlags.HUE_IDX]); // 팔레트 생성
+            toolbox.CreatePalette(startPale.Y, toolbox.Icons[IconFlags.PALETTE]); // 색상인덱스 생성
+
+            Cv2.ImShow("image", toolbox.Image);
+            Cv2.SetMouseCallback("image", toolbox.onMouse);
+
+            Cv2.CreateTrackbar("thickness", "image", ref toolbox.thickness, 20, toolbox.onTrackbar);// 트렉바 등록
+            int x = toolbox.Icons[1].BottomRight.X;
+            Rect canvas_rect = new Rect(x, 0, image.Cols - x, image.Rows);
+            toolbox.SetCanvas(canvas_rect);
+            Cv2.WaitKey();
+
+            while(true)
+            {
+                if (toolbox.mouse_mode == 1)
+                    toolbox.draw(image, toolbox.color);
+                else if(toolbox.mouse_mode == 3)
+                {
+                    if(toolbox.draw_mode == IconFlags.DRAW_BRUSH || toolbox.draw_mode == IconFlags.ERASE)
+                    {
+                        toolbox.draw(image, toolbox.color);
+                    }
+                    else
+                    {
+                        toolbox.draw(image.Clone(),Scalar.All(200));
+                    }
+                }
+
+                if (Cv2.WaitKey(30) == 27)
+                    break;
+
+
+
+            }
+
+            Cv2.WaitKey();
+        }
+    }
+}
