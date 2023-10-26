@@ -1,0 +1,72 @@
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO.IsolatedStorage;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ConsoleApp166
+{
+    internal class Program
+    {
+        static void calc_Histo(Mat image, out Mat hist, int bins, int rangeMax = 256)
+
+        {
+            int[] histSize = { bins };
+            Rangef[] ranges = { new Rangef(0, rangeMax) };
+            int[] channels = { 0 };
+            hist = new Mat();
+            Cv2.CalcHist(new[] { image }, channels, null, hist, 1, histSize, ranges);
+
+        }
+
+        static void draw_histo(Mat hist, out Mat histo_img)
+        {
+
+            Size size = new Size(256, 200);
+            histo_img = new Mat(size, MatType.CV_8U, Scalar.All(255));
+            float bin = (float)histo_img.Cols / hist.Rows;
+            Cv2.Normalize(hist, hist, 0, histo_img.Rows, NormTypes.MinMax);
+
+
+            for(int i = 0; i < hist.Rows; i++)
+            {
+                float start_x = i * bin;
+                float end_x = (i + 1) * bin; 
+                Point pt1 = new Point(start_x, 0);                 //막대 사각형 시작 x 좌표
+                Point pt2 = new Point(end_x, hist.At<float>(i));   //막대 사각형 종료 x 좌표 
+
+                if (pt2.Y > 0)
+                    Cv2.Rectangle(histo_img, pt1, pt2, Scalar.All(0), -1);   //막대 사각형 그리기
+                    
+            }
+
+            Cv2.Flip(histo_img, histo_img, 0);            //x축 기준 영상 뒤집기 
+
+        }
+        static void Main(string[] args)
+        {
+
+            Mat image = Cv2.ImRead("\\Temp\\img\\pixel_test.jpg", ImreadModes.Grayscale);
+            if (image.Empty())
+            {
+                Console.WriteLine("영상을 읽지 못하였습니다");
+                Environment.Exit(0);
+
+            }   //예외처리
+
+            Mat hist;
+            Mat histo_img;
+
+            calc_Histo(image, out hist, 256);   //히스토그램 계산
+            draw_histo(hist, out histo_img);    //그래프 그리기 
+
+            Cv2.ImShow("image", image);
+            Cv2.ImShow("histo_img", histo_img);
+            Cv2.WaitKey();
+            Cv2.DestroyAllWindows();
+        }
+    }
+}
